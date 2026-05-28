@@ -1,9 +1,33 @@
 package main
 
-import "github.com/go-fuego/fuego"
+import (
+	"errors"
+	"os"
+	"tarefas/internal/application/user"
+	"tarefas/internal/infrastructure/db"
+
+	"github.com/go-fuego/fuego"
+	"github.com/joho/godotenv"
+)
 
 func main() {
 	server := fuego.NewServer()
+
+	godotenv.Load()
+
+	databaseConfig := db.Config{
+		DSN: os.Getenv("DATABASE_DSN"),
+	}
+
+	database, err := db.NewPostgresDatabase(databaseConfig)
+	if err != nil {
+		err = errors.Join(errors.New("Failed to initialize database"), err)
+		panic(err)
+	}
+
+	userRepo := db.NewUserRepo(database)
+
+	userService := user.NewService(userRepo)
 
 	fuego.Get(server, "/ping", func(c fuego.ContextNoBody) (string, error) {
 		return "pong", nil
