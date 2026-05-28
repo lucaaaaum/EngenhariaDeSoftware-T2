@@ -18,6 +18,19 @@
         pkgs = import nixpkgs {
           inherit system;
         };
+        go-migrate-postgres = pkgs.buildGoModule rec {
+          pname = "golang-migrate";
+          version = "4.19.1";
+          src = pkgs.fetchFromGitHub {
+            owner = "golang-migrate";
+            repo = "migrate";
+            rev = "v${version}";
+            sha256 = "sha256-Z8ufA2z5XeJ80Jfd6NSls/SurR8rMTO4zq88fQYGGpA=";
+          };
+          subPackages = [ "cmd/migrate" ];
+          tags = [ "postgres" ];
+          vendorHash = "sha256-gGwdRyq8uzDwuq6JyxhEp/7M68GN4HG/vQ+ynhxbU1w=";
+        };
       in
       {
         devShells = {
@@ -27,6 +40,7 @@
               gopls
               gotools
               go-tools
+              go-migrate-postgres
             ];
           };
         };
