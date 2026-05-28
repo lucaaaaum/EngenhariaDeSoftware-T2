@@ -1,8 +1,14 @@
 package user
 
-type UserRepository interface {
-	GetUserById(id string) (*User, error)
-	AddUser(user *User) error
-	UpdateUser(user *User) error
-	DeleteUser(id string) error
+import (
+	"context"
+
+	"github.com/google/uuid"
+)
+
+type Repository interface {
+	GetUserById(ctx context.Context, id uuid.UUID) (*User, error)
+	AddUser(ctx context.Context, user *User) error
+	UpdateUser(ctx context.Context, user *User) error
+	DeleteUser(ctx context.Context, id uuid.UUID) error
 }

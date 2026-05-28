@@ -1,10 +1,12 @@
 package task
 
-type TaskRepository interface {
-	GetTaskById(id string) (*Task, error)
-	GetTasksAssignedToUser(userId string) ([]*Task, error)
-	GetTasksCreatedByUser(userId string) ([]*Task, error)
+import "github.com/google/uuid"
+
+type Repository interface {
+	GetTaskById(id uuid.UUID) (*Task, error)
+	GetTasksAssignedToUser(userId uuid.UUID) ([]*Task, error)
+	GetTasksCreatedByUser(userId uuid.UUID) ([]*Task, error)
 	AddTask(task *Task) error
 	UpdateTask(task *Task) error
-	DeleteTask(id string) error
+	DeleteTask(id uuid.UUID) error
 }
