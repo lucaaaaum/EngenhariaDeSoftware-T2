@@ -1,52 +1,63 @@
 package main
 
-import "github.com/gin-gonic/gin"
+import "github.com/go-fuego/fuego"
 
 func main() {
-	api := gin.Default()
+	server := fuego.NewServer()
 
-	api.GET("/ping", func(ctx *gin.Context) {
-		ctx.String(200, "pong")
+	fuego.Get(server, "/ping", func(c fuego.ContextNoBody) (string, error) {
+		return "pong", nil
 	})
 
-	users := api.Group("/users")
+	users := fuego.Group(server, "/users")
 
-	users.POST("/", func(ctx *gin.Context) {
+	fuego.Post(users, "/", func(c fuego.ContextNoBody) (string, error) {
+		return "User created", nil
 	})
 
-	users.GET("/:id", func(ctx *gin.Context) {
+	fuego.Get(users, "/:id", func(c fuego.ContextNoBody) (string, error) {
+		return "user", nil
 	})
 
-	users.PUT("/:id", func(ctx *gin.Context) {
+	fuego.Put(users, "/:id", func(c fuego.ContextNoBody) (string, error) {
+		return "User updated", nil
 	})
 
-	users.DELETE("/:id", func(ctx *gin.Context) {
+	fuego.Delete(users, "/:id", func(c fuego.ContextNoBody) (string, error) {
+		return "User deleted", nil
 	})
 
-	tasks := api.Group("/tasks")
+	tasks := fuego.Group(server, "/tasks")
 
-	tasks.POST("/", func(ctx *gin.Context) {
+	fuego.Post(tasks, "/", func(c fuego.ContextNoBody) (string, error) {
+		return "Task created", nil
 	})
 
-	tasks.GET("/:id", func(ctx *gin.Context) {
+	fuego.Get(tasks, "/:id", func(c fuego.ContextNoBody) (string, error) {
+		return "task", nil
 	})
 
-	tasks.GET("?assignedTo={:id}", func(ctx *gin.Context) {
+	fuego.Get(tasks, "", func(c fuego.ContextNoBody) (string, error) {
+		return "tasks assigned to user", nil
 	})
 
-	tasks.PUT("/:id", func(ctx *gin.Context) {
+	fuego.Put(tasks, "/:id", func(c fuego.ContextNoBody) (string, error) {
+		return "Task updated", nil
 	})
 
-	tasks.DELETE("/:id", func(ctx *gin.Context) {
+	fuego.Delete(tasks, "/:id", func(c fuego.ContextNoBody) (string, error) {
+		return "Task deleted", nil
 	})
 
-	auth := api.Group("/auth")
+	auth := fuego.Group(server, "/auth")
 
-	auth.POST("/login", func(ctx *gin.Context) {
+	fuego.Post(auth, "/login", func(c fuego.ContextNoBody) (string, error) {
+		return "User logged in", nil
 	})
 
-	auth.POST("/logout", func(ctx *gin.Context) {
+	fuego.Post(auth, "/logout", func(c fuego.ContextNoBody) (string, error) {
+		return "User logged out", nil
 	})
 
-	api.Run(":8080")
+	server.Run()
 }
