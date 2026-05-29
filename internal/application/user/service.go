@@ -16,17 +16,16 @@ func NewService(repo user.Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GetUserById(ctx context.Context, id uuid.UUID) (*user.User, error) {
-	return s.repo.GetUserById(ctx, id)
-}
-
 func (s *Service) CreateUser(ctx context.Context, command CreateUserCommand) (*user.User, error) {
 	user, err := user.NewUser(command.Name)
 	if err != nil {
 		return nil, errors.Join(errors.New("Failed to create user"), err)
 	}
 
-	s.repo.AddUser(ctx, user)
+	err = s.repo.AddUser(ctx, user)
+	if err != nil {
+		return nil, errors.Join(errors.New("Failed to add user to repository"), err)
+	}
 
 	return user, nil
 }
