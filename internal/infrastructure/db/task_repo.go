@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"tarefas/internal/domain/task"
 
 	"github.com/google/uuid"
@@ -26,20 +27,31 @@ func (r *taskRepo) GetTaskById(ctx context.Context, id uuid.UUID) (*task.Task, e
 	return &t, nil
 }
 
-func (r *taskRepo) GetTasksAssignedToUser(ctx context.Context, userId uuid.UUID) ([]*task.Task, error) {
+func (r *taskRepo) QueryTasks(ctx context.Context, createdBy, assignedTo uuid.UUID) ([]*task.Task, error) {
 	var tasks []*task.Task
-	err := r.db.SelectContext(ctx, &tasks, "SELECT * FROM tasks WHERE assigned_to = $1", userId)
-	if err != nil {
-		return nil, errors.Join(errors.New("Failed to get tasks assigned to user"), err)
-	}
-	return tasks, nil
-}
+	var err error
+	args := []any{}
+	appliedFilters := 1
 
-func (r *taskRepo) GetTasksCreatedByUser(ctx context.Context, userId uuid.UUID) ([]*task.Task, error) {
-	var tasks []*task.Task
-	err := r.db.SelectContext(ctx, &tasks, "SELECT * FROM tasks WHERE created_by = $1", userId)
+	query := "SELECT * FROM tasks WHERE 1=1"
+
+	if createdBy != uuid.Nil {
+		query += fmt.Sprintf(" AND created_by = $%d", appliedFilters)
+		args = append(args, createdBy)
+		appliedFilters++
+	}
+
+	if assignedTo != uuid.Nil {
+		query += fmt.Sprintf(" AND assigned_to = $%d", appliedFilters)
+		args = append(args, assignedTo)
+		appliedFilters++
+	}
+
+	query += " ORDER BY created_at DESC"
+
+	err = r.db.SelectContext(ctx, &tasks, query, args...)
 	if err != nil {
-		return nil, errors.Join(errors.New("Failed to get tasks created by user"), err)
+		return nil, errors.Join(errors.New("Failed to query tasks"), err)
 	}
 	return tasks, nil
 }
