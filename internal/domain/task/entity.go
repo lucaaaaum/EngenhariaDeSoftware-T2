@@ -8,13 +8,13 @@ import (
 )
 
 type Task struct {
-	Id          uuid.UUID
-	Title       string
-	Description string
-	AssignedTo  uuid.UUID
-	CreatedBy   uuid.UUID
-	CreatedAt   time.Time
-	Status      TaskStatus
+	Id          uuid.UUID  `db:"id"`
+	Title       string     `db:"title"`
+	Description string     `db:"description"`
+	AssignedTo  uuid.UUID  `db:"assigned_to"`
+	CreatedBy   uuid.UUID  `db:"created_by"`
+	CreatedAt   time.Time  `db:"created_at"`
+	Status      TaskStatus `db:"status"`
 }
 
 func NewTask(title, description string, createdBy uuid.UUID) (*Task, error) {
