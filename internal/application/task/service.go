@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"tarefas/internal/domain/task"
+
+	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -12,6 +14,14 @@ type Service struct {
 
 func NewService(repo task.Repository) *Service {
 	return &Service{repo: repo}
+}
+
+func (s *Service) GetTaskById(ctx context.Context, id uuid.UUID) (*task.Task, error) {
+	task, err := s.repo.GetTaskById(ctx, id)
+	if err != nil {
+		return nil, errors.Join(errors.New("Failed to get task by id"), err)
+	}
+	return task, nil
 }
 
 func (s *Service) CreateTask(ctx context.Context, command CreateTaskCommand) (*task.Task, error) {
@@ -45,4 +55,12 @@ func (s *Service) UpdateTask(ctx context.Context, command UpdateTaskCommand) err
 	}
 
 	return nil
+}
+
+func (s *Service) QueryTasks(ctx context.Context, createdBy, assignedTo uuid.UUID) ([]*task.Task, error) {
+	tasks, err := s.repo.QueryTasks(ctx, createdBy, assignedTo)
+	if err != nil {
+		return nil, errors.Join(errors.New("Failed to query tasks"), err)
+	}
+	return tasks, nil
 }
