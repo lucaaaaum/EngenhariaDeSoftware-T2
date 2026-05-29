@@ -29,7 +29,7 @@ type TaskDto struct {
 	Status      task.TaskStatus `json:"status"`
 }
 
-func NewUserDto(task *task.Task) *TaskDto {
+func NewTaskDto(task *task.Task) *TaskDto {
 	return &TaskDto{
 		Id:          task.Id,
 		Title:       task.Title,
