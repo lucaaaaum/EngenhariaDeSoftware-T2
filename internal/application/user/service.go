@@ -47,8 +47,8 @@ func (s *Service) UpdateUser(ctx context.Context, command UpdateUserCommand) err
 	return err
 }
 
-func (s *Service) DeleteUser(ctx context.Context, command DeleteUserCommand) error {
-	err := s.repo.DeleteUser(ctx, command.Id)
+func (s *Service) DeleteUser(ctx context.Context, id uuid.UUID) error {
+	err := s.repo.DeleteUser(ctx, id)
 	if err != nil {
 		err = errors.Join(errors.New("Failed to delete user"), err)
 	}

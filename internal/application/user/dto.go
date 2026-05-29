@@ -15,10 +15,6 @@ type UpdateUserCommand struct {
 	Name string    `json:"name"`
 }
 
-type DeleteUserCommand struct {
-	Id uuid.UUID `json:"id"`
-}
-
 type UserDto struct {
 	Id   uuid.UUID `json:"id"`
 	Name string    `json:"name"`
