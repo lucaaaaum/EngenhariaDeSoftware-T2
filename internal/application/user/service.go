@@ -59,5 +59,5 @@ func (s *Service) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	if err != nil {
 		err = errors.Join(errors.New("Failed to delete user"), err)
 	}
-	return err
+	return nil
 }
