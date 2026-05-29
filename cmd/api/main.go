@@ -40,13 +40,13 @@ func main() {
 	users := fuego.Group(server, "/users")
 	fuego.Post(users, "/", userHandler.CreateUser)
 	fuego.Get(users, "/{id}", userHandler.GetUserById)
-	fuego.Put(users, "/:id", userHandler.UpdateUser)
-	fuego.Delete(users, "/:id", userHandler.DeleteUser)
+	fuego.Put(users, "/{id}", userHandler.UpdateUser)
+	fuego.Delete(users, "/{id}", userHandler.DeleteUser)
 
 	tasks := fuego.Group(server, "/tasks")
 
 	fuego.Post(tasks, "/", taskHandler.CreateTask)
-	fuego.Get(tasks, "/:id", taskHandler.GetTaskById)
+	fuego.Get(tasks, "/{id}", taskHandler.GetTaskById)
 	fuego.Get(
 		tasks,
 		"/",
@@ -55,7 +55,7 @@ func main() {
 		option.Query("createdBy", "Filter by creator", param.Nullable()),
 	)
 	fuego.Put(tasks, "/", taskHandler.UpdateTask)
-	fuego.Delete(tasks, "/:id", taskHandler.DeleteTask)
+	fuego.Delete(tasks, "/{id}", taskHandler.DeleteTask)
 
 	auth := fuego.Group(server, "/auth")
 
