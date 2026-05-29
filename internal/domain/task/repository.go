@@ -8,8 +8,7 @@ import (
 
 type Repository interface {
 	GetTaskById(ctx context.Context, id uuid.UUID) (*Task, error)
-	GetTasksAssignedToUser(ctx context.Context, userId uuid.UUID) ([]*Task, error)
-	GetTasksCreatedByUser(ctx context.Context, userId uuid.UUID) ([]*Task, error)
+	QueryTasks(ctx context.Context, createdBy, assignedTo uuid.UUID) ([]*Task, error)
 	AddTask(ctx context.Context, task *Task) error
 	UpdateTask(ctx context.Context, task *Task) error
 	DeleteTask(ctx context.Context, id uuid.UUID) error
