@@ -63,7 +63,7 @@ func (h *TaskHandler) QueryTasks(c fuego.ContextNoBody) ([]task.TaskDto, error) 
 		}
 	}
 
-	tasksFound, err := h.service.QueryTasks(c.Context(), assignedTo, createdBy)
+	tasksFound, err := h.service.QueryTasks(c.Context(), createdBy, assignedTo)
 	if err != nil {
 		return nil, errors.Join(errors.New("Failed to query tasks"), err)
 	}
