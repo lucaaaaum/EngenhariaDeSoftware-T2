@@ -37,10 +37,6 @@ func main() {
 	taskService := task.NewService(taskRepo)
 	taskHandler := handler.NewTaskHandler(taskService)
 
-	fuego.Get(server, "/ping", func(c fuego.ContextNoBody) (string, error) {
-		return "pong", nil
-	})
-
 	users := fuego.Group(server, "/users")
 	fuego.Post(users, "/", userHandler.CreateUser)
 	fuego.Get(users, "/{id}", userHandler.GetUserById)
