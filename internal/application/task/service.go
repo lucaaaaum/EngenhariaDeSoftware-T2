@@ -24,6 +24,14 @@ func (s *Service) GetTaskById(ctx context.Context, id uuid.UUID) (*task.Task, er
 	return task, nil
 }
 
+func (s *Service) QueryTasks(ctx context.Context, createdBy, assignedTo uuid.UUID) ([]*task.Task, error) {
+	tasks, err := s.repo.QueryTasks(ctx, createdBy, assignedTo)
+	if err != nil {
+		return nil, errors.Join(errors.New("Failed to query tasks"), err)
+	}
+	return tasks, nil
+}
+
 func (s *Service) CreateTask(ctx context.Context, command CreateTaskCommand) (*task.Task, error) {
 	task, err := task.NewTask(command.Title, command.Description, command.CreatedBy)
 	if err != nil {
@@ -57,10 +65,10 @@ func (s *Service) UpdateTask(ctx context.Context, command UpdateTaskCommand) err
 	return nil
 }
 
-func (s *Service) QueryTasks(ctx context.Context, createdBy, assignedTo uuid.UUID) ([]*task.Task, error) {
-	tasks, err := s.repo.QueryTasks(ctx, createdBy, assignedTo)
+func (s *Service) DeleteTask(ctx context.Context, id uuid.UUID) error {
+	err := s.repo.DeleteTask(ctx, id)
 	if err != nil {
-		return nil, errors.Join(errors.New("Failed to query tasks"), err)
+		return errors.Join(errors.New("Failed to delete task"), err)
 	}
-	return tasks, nil
+	return nil
 }
