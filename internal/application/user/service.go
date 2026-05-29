@@ -16,6 +16,14 @@ func NewService(repo user.Repository) *Service {
 	return &Service{repo: repo}
 }
 
+func (s *Service) GetUserById(ctx context.Context, id uuid.UUID) (*user.User, error) {
+	user, err := s.repo.GetUserById(ctx, id)
+	if err != nil {
+		return nil, errors.Join(errors.New("Failed to get user by id"), err)
+	}
+	return user, nil
+}
+
 func (s *Service) CreateUser(ctx context.Context, command CreateUserCommand) (*user.User, error) {
 	user, err := user.NewUser(command.Name)
 	if err != nil {
