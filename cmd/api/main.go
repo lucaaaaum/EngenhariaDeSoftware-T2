@@ -3,11 +3,14 @@ package main
 import (
 	"errors"
 	"os"
+	"tarefas/cmd/api/handler"
+	"tarefas/internal/application/task"
 	"tarefas/internal/application/user"
 	"tarefas/internal/infrastructure/db"
 
 	"github.com/go-fuego/fuego"
-	"github.com/google/uuid"
+	"github.com/go-fuego/fuego/option"
+	"github.com/go-fuego/fuego/param"
 	"github.com/joho/godotenv"
 )
 
@@ -27,93 +30,36 @@ func main() {
 	}
 
 	userRepo := db.NewUserRepo(database)
-
 	userService := user.NewService(userRepo)
+	userHandler := handler.NewUserHandler(userService)
+
+	taskRepo := db.NewTaskRepo(database)
+	taskService := task.NewService(taskRepo)
+	taskHandler := handler.NewTaskHandler(taskService)
 
 	fuego.Get(server, "/ping", func(c fuego.ContextNoBody) (string, error) {
 		return "pong", nil
 	})
 
 	users := fuego.Group(server, "/users")
-
-	fuego.Post(users, "/", func(c fuego.ContextWithBody[user.CreateUserCommand]) (*user.UserDto, error) {
-		cmd, err := c.Body()
-		if err != nil {
-			return nil, errors.Join(errors.New("Failed to parse request body"), err)
-		}
-		createdUser, err := userService.CreateUser(c.Context(), cmd)
-		if err != nil {
-			return nil, errors.Join(errors.New("Failed to create user"), err)
-		}
-
-		return user.NewUserDto(createdUser), nil
-	})
-
-	fuego.Get(users, "/{id}", func(c fuego.ContextNoBody) (*user.UserDto, error) {
-		stringId := c.PathParam("id")
-		id, err := uuid.Parse(stringId)
-		if err != nil {
-			return nil, errors.Join(errors.New("Invalid user ID"), err)
-		}
-		userFound, err := userRepo.GetUserById(c.Context(), id)
-		if err != nil {
-			return nil, errors.Join(errors.New("Failed to get user"), err)
-		}
-		return user.NewUserDto(userFound), nil
-	})
-
-	fuego.Put(users, "/:id", func(c fuego.ContextWithBody[user.UpdateUserCommand]) (any, error) {
-		cmd, err := c.Body()
-		if err != nil {
-			return nil, errors.Join(errors.New("Failed to parse request body"), err)
-		}
-		id, err := uuid.Parse(c.PathParam("id"))
-		if err != nil {
-			return nil, errors.Join(errors.New("Invalid user ID"), err)
-		}
-		cmd.Id = id
-		err = userService.UpdateUser(c.Context(), cmd)
-		if err != nil {
-			return nil, errors.Join(errors.New("Failed to update user"), err)
-		}
-		c.SetStatus(204)
-		return nil, nil
-	})
-
-	fuego.Delete(users, "/:id", func(c fuego.ContextNoBody) (any, error) {
-		id, err := uuid.Parse(c.PathParam("id"))
-		if err != nil {
-			return nil, errors.Join(errors.New("Invalid user ID"), err)
-		}
-		err = userService.DeleteUser(c.Context(), id)
-		if err != nil {
-			return nil, errors.Join(errors.New("Failed to delete user"), err)
-		}
-		c.SetStatus(204)
-		return nil, nil
-	})
+	fuego.Post(users, "/", userHandler.CreateUser)
+	fuego.Get(users, "/{id}", userHandler.GetUserById)
+	fuego.Put(users, "/:id", userHandler.UpdateUser)
+	fuego.Delete(users, "/:id", userHandler.DeleteUser)
 
 	tasks := fuego.Group(server, "/tasks")
 
-	fuego.Post(tasks, "/", func(c fuego.ContextNoBody) (string, error) {
-		return "Task created", nil
-	})
-
-	fuego.Get(tasks, "/:id", func(c fuego.ContextNoBody) (string, error) {
-		return "task", nil
-	})
-
-	fuego.Get(tasks, "", func(c fuego.ContextNoBody) (string, error) {
-		return "tasks assigned to user", nil
-	})
-
-	fuego.Put(tasks, "/:id", func(c fuego.ContextNoBody) (string, error) {
-		return "Task updated", nil
-	})
-
-	fuego.Delete(tasks, "/:id", func(c fuego.ContextNoBody) (string, error) {
-		return "Task deleted", nil
-	})
+	fuego.Post(tasks, "/", taskHandler.CreateTask)
+	fuego.Get(tasks, "/:id", taskHandler.GetTaskById)
+	fuego.Get(
+		tasks,
+		"/",
+		taskHandler.QueryTasks,
+		option.Query("assignedTo", "Filter by assigned user", param.Nullable()),
+		option.Query("createdBy", "Filter by creator", param.Nullable()),
+	)
+	fuego.Put(tasks, "/", taskHandler.UpdateTask)
+	fuego.Delete(tasks, "/:id", taskHandler.DeleteTask)
 
 	auth := fuego.Group(server, "/auth")
 
