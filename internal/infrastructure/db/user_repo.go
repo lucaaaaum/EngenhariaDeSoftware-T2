@@ -2,7 +2,7 @@ package db
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"tarefas/internal/domain/user"
 
 	"github.com/google/uuid"
@@ -19,54 +19,44 @@ func NewUserRepo(db *sqlx.DB) user.Repository {
 
 func (r *userRepo) GetUserById(ctx context.Context, id uuid.UUID) (*user.User, error) {
 	var u user.User
-	err := r.db.GetContext(ctx, &u, "SELECT * FROM users WHERE id = $1", id)
-	if err != nil {
-		return nil, errors.Join(errors.New("Failed to get user by id"), err)
+	if err := r.db.GetContext(ctx, &u, "SELECT * FROM users WHERE id = $1", id); err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
 	}
 	return &u, nil
 }
 
-func (r *userRepo) AddUser(ctx context.Context, user *user.User) error {
-	_, err := r.db.ExecContext(
-		ctx,
-		"INSERT INTO users (id, name) VALUES ($1, $2)",
-		user.Id,
-		user.Name,
-	)
-	if err != nil {
-		err = errors.Join(errors.New("Failed to add user"), err)
+func (r *userRepo) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
+	var u user.User
+	if err := r.db.GetContext(ctx, &u, "SELECT * FROM users WHERE email = $1", email); err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
 	}
-	return err
+	return &u, nil
 }
 
-func (r *userRepo) UpdateUser(ctx context.Context, user *user.User) error {
+func (r *userRepo) AddUser(ctx context.Context, u *user.User) error {
 	_, err := r.db.ExecContext(
 		ctx,
-		`
-		UPDATE users
-		SET name = $2
-		WHERE id = $1
-		`,
-		user.Id,
-		user.Name,
+		"INSERT INTO users (id, name, email, password_hash) VALUES ($1, $2, $3, $4)",
+		u.Id, u.Name, u.Email, u.PasswordHash,
 	)
 	if err != nil {
-		err = errors.Join(errors.New("Failed to update user"), err)
+		return fmt.Errorf("insert user: %w", err)
 	}
-	return err
+	return nil
+}
+
+func (r *userRepo) UpdateUser(ctx context.Context, u *user.User) error {
+	_, err := r.db.ExecContext(ctx, `UPDATE users SET name = $2 WHERE id = $1`, u.Id, u.Name)
+	if err != nil {
+		return fmt.Errorf("update user: %w", err)
+	}
+	return nil
 }
 
 func (r *userRepo) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	_, err := r.db.ExecContext(
-		ctx,
-		`
-		DELETE FROM users
-		WHERE id = $1
-		`,
-		id,
-	)
+	_, err := r.db.ExecContext(ctx, `DELETE FROM users WHERE id = $1`, id)
 	if err != nil {
-		err = errors.Join(errors.New("Failed to delete user"), err)
+		return fmt.Errorf("delete user: %w", err)
 	}
-	return err
+	return nil
 }

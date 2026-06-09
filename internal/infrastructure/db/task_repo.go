@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"tarefas/internal/domain/task"
 
@@ -20,91 +19,85 @@ func NewTaskRepo(db *sqlx.DB) task.Repository {
 
 func (r *taskRepo) GetTaskById(ctx context.Context, id uuid.UUID) (*task.Task, error) {
 	var t task.Task
-	err := r.db.GetContext(ctx, &t, "SELECT * FROM tasks WHERE id = $1", id)
-	if err != nil {
-		return nil, errors.Join(errors.New("Failed to get task by id"), err)
+	if err := r.db.GetContext(ctx, &t, "SELECT * FROM tasks WHERE id = $1", id); err != nil {
+		return nil, fmt.Errorf("task not found: %w", err)
 	}
 	return &t, nil
 }
 
-func (r *taskRepo) QueryTasks(ctx context.Context, createdBy, assignedTo uuid.UUID) ([]*task.Task, error) {
+func (r *taskRepo) QueryTasks(ctx context.Context, filter task.TaskFilter) ([]*task.Task, error) {
 	var tasks []*task.Task
-	var err error
 	args := []any{}
-	appliedFilters := 1
+	i := 1
 
 	query := "SELECT * FROM tasks WHERE 1=1"
 
-	if createdBy != uuid.Nil {
-		query += fmt.Sprintf(" AND created_by = $%d", appliedFilters)
-		args = append(args, createdBy)
-		appliedFilters++
+	if filter.CreatedBy != uuid.Nil {
+		query += fmt.Sprintf(" AND created_by = $%d", i)
+		args = append(args, filter.CreatedBy)
+		i++
 	}
-
-	if assignedTo != uuid.Nil {
-		query += fmt.Sprintf(" AND assigned_to = $%d", appliedFilters)
-		args = append(args, assignedTo)
-		appliedFilters++
+	if filter.AssignedTo != uuid.Nil {
+		query += fmt.Sprintf(" AND assigned_to = $%d", i)
+		args = append(args, filter.AssignedTo)
+		i++
+	}
+	if filter.Status != nil {
+		query += fmt.Sprintf(" AND status = $%d", i)
+		args = append(args, *filter.Status)
+		i++
+	}
+	if filter.Priority != nil {
+		query += fmt.Sprintf(" AND priority = $%d", i)
+		args = append(args, *filter.Priority)
+		i++
+	}
+	if filter.DueBefore != nil {
+		query += fmt.Sprintf(" AND due_date <= $%d", i)
+		args = append(args, *filter.DueBefore)
+		i++
 	}
 
 	query += " ORDER BY created_at DESC"
 
-	err = r.db.SelectContext(ctx, &tasks, query, args...)
-	if err != nil {
-		return nil, errors.Join(errors.New("Failed to query tasks"), err)
+	if err := r.db.SelectContext(ctx, &tasks, query, args...); err != nil {
+		return nil, fmt.Errorf("query tasks: %w", err)
 	}
 	return tasks, nil
 }
 
-func (r *taskRepo) AddTask(ctx context.Context, task *task.Task) error {
+func (r *taskRepo) AddTask(ctx context.Context, t *task.Task) error {
 	_, err := r.db.ExecContext(
 		ctx,
-		"INSERT INTO tasks (id, title, description, status, created_by, assigned_to) VALUES ($1, $2, $3, $4, $5, $6)",
-		task.Id,
-		task.Title,
-		task.Description,
-		task.Status,
-		task.CreatedBy,
-		task.AssignedTo,
+		`INSERT INTO tasks (id, title, description, status, priority, due_date, created_by, assigned_to)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		t.Id, t.Title, t.Description, t.Status, t.Priority, t.DueDate, t.CreatedBy, t.AssignedTo,
 	)
 	if err != nil {
-		err = errors.Join(errors.New("Failed to add task"), err)
+		return fmt.Errorf("insert task: %w", err)
 	}
-	return err
+	return nil
 }
 
-func (r *taskRepo) UpdateTask(ctx context.Context, task *task.Task) error {
+func (r *taskRepo) UpdateTask(ctx context.Context, t *task.Task) error {
 	_, err := r.db.ExecContext(
 		ctx,
-		`
-		UPDATE tasks
-		SET title = $2, description = $3, status = $4, created_by = $5, assigned_to = $6
-		WHERE id = $1
-		`,
-		task.Id,
-		task.Title,
-		task.Description,
-		task.Status,
-		task.CreatedBy,
-		task.AssignedTo,
+		`UPDATE tasks
+		 SET title = $2, description = $3, status = $4, priority = $5,
+		     due_date = $6, created_by = $7, assigned_to = $8
+		 WHERE id = $1`,
+		t.Id, t.Title, t.Description, t.Status, t.Priority, t.DueDate, t.CreatedBy, t.AssignedTo,
 	)
 	if err != nil {
-		err = errors.Join(errors.New("Failed to update task"), err)
+		return fmt.Errorf("update task: %w", err)
 	}
-	return err
+	return nil
 }
 
 func (r *taskRepo) DeleteTask(ctx context.Context, id uuid.UUID) error {
-	_, err := r.db.ExecContext(
-		ctx,
-		`
-		DELETE FROM tasks
-		WHERE id = $1
-		`,
-		id,
-	)
+	_, err := r.db.ExecContext(ctx, `DELETE FROM tasks WHERE id = $1`, id)
 	if err != nil {
-		err = errors.Join(errors.New("Failed to delete task"), err)
+		return fmt.Errorf("delete task: %w", err)
 	}
-	return err
+	return nil
 }
