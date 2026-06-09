@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"tarefas/internal/domain/user"
 
 	"github.com/google/uuid"
@@ -17,47 +17,52 @@ func NewService(repo user.Repository) *Service {
 }
 
 func (s *Service) GetUserById(ctx context.Context, id uuid.UUID) (*user.User, error) {
-	user, err := s.repo.GetUserById(ctx, id)
+	u, err := s.repo.GetUserById(ctx, id)
 	if err != nil {
-		return nil, errors.Join(errors.New("Failed to get user by id"), err)
+		return nil, fmt.Errorf("get user: %w", err)
 	}
-	return user, nil
+	return u, nil
 }
 
-func (s *Service) CreateUser(ctx context.Context, command CreateUserCommand) (*user.User, error) {
-	user, err := user.NewUser(command.Name)
+func (s *Service) GetUserByEmail(ctx context.Context, email string) (*user.User, error) {
+	u, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
-		return nil, errors.Join(errors.New("Failed to create user"), err)
+		return nil, fmt.Errorf("get user by email: %w", err)
 	}
-
-	err = s.repo.AddUser(ctx, user)
-	if err != nil {
-		return nil, errors.Join(errors.New("Failed to add user to repository"), err)
-	}
-
-	return user, nil
+	return u, nil
 }
 
-func (s *Service) UpdateUser(ctx context.Context, command UpdateUserCommand) error {
-	user, err := s.repo.GetUserById(ctx, command.Id)
+func (s *Service) CreateUser(ctx context.Context, cmd CreateUserCommand) (*user.User, error) {
+	u, err := user.NewUser(cmd.Name, cmd.Email, cmd.Password)
 	if err != nil {
-		return errors.Join(errors.New("Failed to get user by id"), err)
+		return nil, err
 	}
 
-	user.Name = command.Name
-
-	err = s.repo.UpdateUser(ctx, user)
-	if err != nil {
-		err = errors.Join(errors.New("Failed to update user"), err)
+	if err := s.repo.AddUser(ctx, u); err != nil {
+		return nil, fmt.Errorf("saving user: %w", err)
 	}
 
-	return err
+	return u, nil
+}
+
+func (s *Service) UpdateUser(ctx context.Context, cmd UpdateUserCommand) error {
+	u, err := s.repo.GetUserById(ctx, cmd.Id)
+	if err != nil {
+		return fmt.Errorf("get user: %w", err)
+	}
+
+	u.Name = cmd.Name
+
+	if err := s.repo.UpdateUser(ctx, u); err != nil {
+		return fmt.Errorf("update user: %w", err)
+	}
+
+	return nil
 }
 
 func (s *Service) DeleteUser(ctx context.Context, id uuid.UUID) error {
-	err := s.repo.DeleteUser(ctx, id)
-	if err != nil {
-		err = errors.Join(errors.New("Failed to delete user"), err)
+	if err := s.repo.DeleteUser(ctx, id); err != nil {
+		return fmt.Errorf("delete user: %w", err)
 	}
 	return nil
 }

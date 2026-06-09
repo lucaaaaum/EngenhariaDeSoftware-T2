@@ -2,6 +2,8 @@ package handler
 
 import (
 	"errors"
+	"net/http"
+	"strings"
 	"tarefas/internal/application/user"
 
 	"github.com/go-fuego/fuego"
@@ -19,42 +21,42 @@ func NewUserHandler(service *user.Service) *UserHandler {
 func (h *UserHandler) CreateUser(c fuego.ContextWithBody[user.CreateUserCommand]) (*user.UserDto, error) {
 	cmd, err := c.Body()
 	if err != nil {
-		return nil, errors.Join(errors.New("Failed to parse request body"), err)
+		return nil, err
 	}
-	createdUser, err := h.service.CreateUser(c.Context(), cmd)
+	u, err := h.service.CreateUser(c.Context(), cmd)
 	if err != nil {
-		return nil, errors.Join(errors.New("Failed to create user"), err)
+		return nil, err
 	}
-
-	return user.NewUserDto(createdUser), nil
+	return user.NewUserDto(u), nil
 }
 
 func (h *UserHandler) GetUserById(c fuego.ContextNoBody) (*user.UserDto, error) {
-	stringId := c.PathParam("id")
-	id, err := uuid.Parse(stringId)
+	id, err := uuid.Parse(c.PathParam("id"))
 	if err != nil {
-		return nil, errors.Join(errors.New("Invalid user ID"), err)
+		return nil, errors.New("invalid user id")
 	}
-	userFound, err := h.service.GetUserById(c.Context(), id)
+	u, err := h.service.GetUserById(c.Context(), id)
 	if err != nil {
-		return nil, errors.Join(errors.New("Failed to get user"), err)
+		if strings.Contains(err.Error(), "not found") {
+			return nil, fuego.HTTPError{Status: http.StatusNotFound, Detail: "user not found"}
+		}
+		return nil, err
 	}
-	return user.NewUserDto(userFound), nil
+	return user.NewUserDto(u), nil
 }
 
 func (h *UserHandler) UpdateUser(c fuego.ContextWithBody[user.UpdateUserCommand]) (any, error) {
 	cmd, err := c.Body()
 	if err != nil {
-		return nil, errors.Join(errors.New("Failed to parse request body"), err)
+		return nil, err
 	}
 	id, err := uuid.Parse(c.PathParam("id"))
 	if err != nil {
-		return nil, errors.Join(errors.New("Invalid user ID"), err)
+		return nil, errors.New("invalid user id")
 	}
 	cmd.Id = id
-	err = h.service.UpdateUser(c.Context(), cmd)
-	if err != nil {
-		return nil, errors.Join(errors.New("Failed to update user"), err)
+	if err := h.service.UpdateUser(c.Context(), cmd); err != nil {
+		return nil, err
 	}
 	c.SetStatus(204)
 	return nil, nil
@@ -63,11 +65,10 @@ func (h *UserHandler) UpdateUser(c fuego.ContextWithBody[user.UpdateUserCommand]
 func (h *UserHandler) DeleteUser(c fuego.ContextNoBody) (any, error) {
 	id, err := uuid.Parse(c.PathParam("id"))
 	if err != nil {
-		return nil, errors.Join(errors.New("Invalid user ID"), err)
+		return nil, errors.New("invalid user id")
 	}
-	err = h.service.DeleteUser(c.Context(), id)
-	if err != nil {
-		return nil, errors.Join(errors.New("Failed to delete user"), err)
+	if err := h.service.DeleteUser(c.Context(), id); err != nil {
+		return nil, err
 	}
 	c.SetStatus(204)
 	return nil, nil
